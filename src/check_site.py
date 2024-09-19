@@ -7,7 +7,7 @@ from urllib.parse import urljoin, urlparse, urlunparse
 
 import requests
 from bs4 import BeautifulSoup
-from tqdm import tqdm
+from tqdm.contrib.concurrent import thread_map
 
 
 def simplify_link(link):
@@ -110,31 +110,44 @@ def crawl_website(start_url, max_depth=2, sleep_time=0.2, timeout=5, ignore_patt
     return linked_pages
 
 
-def check_links(linked_pages: dict[str, set], timeout: float = 5, sleep_time: float = 0.2, progressbar: bool = False, verbose: bool = False) -> bool:
+def check_links(linked_pages: dict[str, set], timeout: float = 5, sleep_time: float = 0.2, progressbar: bool = False, verbose: bool = False, num_workers: int = 1) -> bool:
     '''Check for bad links, return true if all are ok.'''
-    links_ok = True
-    already_checked = {}
-    pbar = tqdm(desc="Checking links:", total=len(set.union(*linked_pages.values())), disable=not progressbar)
-    for current_link, links in linked_pages.items():
-        for link in links:
-            if verbose: pbar.write(f"Checking: {link}")
-            if link in already_checked:
-                valid, status_code = already_checked[link]
-            else:
-                valid, status_code = check_link_status(link, timeout)
-                already_checked[link] = (valid, status_code)
-                pbar.update(1)
-                if verbose: pbar.write(f"Sleep {sleep_time} s to reduce load on server")
-                sleep(sleep_time)
 
-            if not valid:
-                links_ok = False
-                print(
-                    f"Problematic link {link} on page {current_link}, status code {status_code}",
-                    file=sys.stderr,
-                )
-            
-    return links_ok
+    def worker(link):
+        valid, status_link = check_link_status(link, timeout)
+        sleep(sleep_time)
+        return valid, status_link
+
+    # Check links in parallel
+    unique_links = set.union(*linked_pages.values())
+    link_check_results = dict(
+        zip(
+            unique_links,
+            thread_map(
+                worker,
+                unique_links,
+                max_workers=num_workers,
+                disable=not progressbar,
+            ),
+        )
+    )
+
+    # Print problematic links to stderr
+    all_links_ok = all(valid for valid, _ in link_check_results.values())
+    if all_links_ok:
+        print("All links OK!")
+    else:
+        print("Problematic links found:", file=sys.stderr)
+        for current_link, links in linked_pages.items():
+            for link in links:
+                valid, status_code = link_check_results[link]
+                if not valid:
+                    print(
+                        f"  {link} with {status_code} at {current_link}",
+                        file=sys.stderr,
+                    )
+
+    return all_links_ok
 
 
 def main():
@@ -142,11 +155,12 @@ def main():
     parser = argparse.ArgumentParser(description="Crawl a website and check for broken links.")
     parser.add_argument("start_url", help="The starting URL of the website to crawl.")
     parser.add_argument("--max-depth", type=int, default=2, help="Maximum depth when crawling (default: 2).")
-    parser.add_argument("--sleep-time", type=float, default=0.1, help="The time to sleep between requests (default: 0.1 seconds).")
+    parser.add_argument("--sleep-time", type=float, default=0.0, help="The time to sleep between requests (default: 0.0 seconds).")
     parser.add_argument("--timeout", type=int, default=2, help="The request timeout in seconds (default: 2 seconds).")
-    parser.add_argument("--ignore", nargs="*", default=[], help="List of patterns (regex) to ignore when crawling.")
+    parser.add_argument("--ignore", nargs="*", default=["^mailto:"], help="List of patterns (regex) to ignore when crawling.")
     parser.add_argument("-v", "--verbose", action="store_true", help="Increase verbosity.")
     parser.add_argument("--progressbar", action="store_true", help="Enable progress bar.")
+    parser.add_argument("--num-workers", type=int, default=1, help="Number of threads to use (default: 1).")
 
     args = parser.parse_args()
 
@@ -165,8 +179,10 @@ def main():
         timeout=args.timeout,
         verbose=args.verbose,
         progressbar=args.progressbar,
+        num_workers=args.num_workers,
     )
-    sys.exit(1)
+    if not links_ok:
+        sys.exit(1)
 
 
 if __name__ == "__main__":
