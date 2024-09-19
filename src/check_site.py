@@ -103,6 +103,7 @@ def crawl_website(start_url, max_depth=2, sleep_time=0.2, timeout=5, ignore_patt
             # If it's an internal link and we haven't visited it, add to the queue
             is_internal = is_internal_link(full_link, base_domain)
             if is_internal and full_link not in visited_pages:
+                assert full_link.endswith("/") or full_link.endswith(".html")
                 pages_to_visit.append((simplify_link(full_link), depth + 1))
 
         # Sleep between requests to avoid overloading the server
