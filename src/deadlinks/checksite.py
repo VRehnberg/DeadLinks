@@ -7,6 +7,7 @@ from typing import Optional, Union
 
 import requests
 from bs4 import BeautifulSoup
+from colorama import Fore, Style
 from tqdm.contrib.concurrent import thread_map
 
 
@@ -22,17 +23,22 @@ def get_links_from_page(url: str, timeout: float) -> tuple[str, set[str], bool]:
     try:
         response = requests.get(url, timeout=timeout)
     except Exception as e:
-        print(f"Error fetching {url}: {e}", file=sys.stderr)
+        print(
+            f"{Fore.RED}Error{Style.RESET_ALL} fetching {Fore.RED}{url}{Style.RESET_ALL}: {e}",
+            file=sys.stderr,
+        )
         return url, set(), False
     else:
         if response.url != url:
             print(
-                f"WARN: Link not pointing to endpoint {url} -> {response.url}",
+                f"{Fore.YELLOW}WARN:{Style.RESET_ALL} Link not pointing to endpoint {Fore.YELLOW}{url}{Style.RESET_ALL} -> {response.url}",
                 file=sys.stderr,
             )
             url = response.url
         if response.status_code != 200:
-            print(f"Failed to retrieve {url}. Status code: {response.status_code}")
+            print(
+                f"{Fore.RED}Failed{Style.RESET_ALL} to retrieve {Fore.RED}{url}{Style.RESET_ALL}. Status code: {response.status_code}"
+            )
             return url, set(), False
 
         soup = BeautifulSoup(response.content, "html.parser")
@@ -55,7 +61,10 @@ def check_link_status(link: str, timeout: float) -> tuple[bool, Union[int, str]]
     except requests.exceptions.RequestException as e:
         return False, str(e)
     except Exception as e:
-        print(f"Unknown error requesting {link}: {e}", file=sys.stderr)
+        print(
+            f"{Fore.RED}Unknown error{Style.RESET_ALL} requesting {Fore.RED}{link}{Style.RESET_ALL}: {e}",
+            file=sys.stderr,
+        )
         return False, str(e)
     else:
         if response.status_code >= 400:
@@ -175,17 +184,22 @@ def check_links(
     # Print problematic links to stderr
     all_links_ok = all(valid for valid, _ in link_check_results.values())
     if all_links_ok:
-        print("All links OK!")
+        print(f"{Fore.GREEN}All links OK!{Style.RESET_ALL}")
     else:
-        print("Problematic links found:", file=sys.stderr)
+        print(f"{Fore.RED}Problematic links{Style.RESET_ALL} found:", file=sys.stderr)
+        num_invalid_links = 0
         for current_link, links in linked_pages.items():
             for link in links:
                 valid, status_code = link_check_results[link]
                 if not valid:
+                    num_invalid_links += 1
                     print(
-                        f"  {link} with {status_code} at {current_link}",
+                        f"  {Fore.RED}{link}{Style.RESET_ALL} at {Fore.RED}{current_link}{Style.RESET_ALL} with {status_code}",
                         file=sys.stderr,
                     )
+        print(
+            f"in total {num_invalid_links}/{sum(len(links) for links in linked_pages.values())} links where invalid."
+        )
 
     return all_links_ok
 
