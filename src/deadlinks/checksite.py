@@ -71,8 +71,8 @@ def should_ignore_link(link: str, ignore_patterns: list[str]) -> bool:
 def crawl_website(
     start_url: str,
     max_depth: int = 2,
-    sleep_time: float = 0.2,
-    timeout: float = 5.0,
+    sleep_time: float = 0.0,
+    timeout: float = 2.0,
     ignore_patterns: Optional[list[str]] = None,
     verbose: bool = False,
     num_workers: int = 1,
@@ -99,6 +99,8 @@ def crawl_website(
             ) and not should_ignore_link(full_link, ignore_patterns)
             return keep_link, full_link
 
+        # TODO should return if internal or not
+
         links = set(
             full_link
             for link in links
@@ -114,7 +116,8 @@ def crawl_website(
     pages_to_visit = [start_url]
     linked_pages = dict()
 
-    for depth in range(max_depth + 1):
+    depth = 0
+    while len(pages_to_visit) > 0:
         linked_pages.update(
             dict(
                 thread_map(
@@ -129,13 +132,17 @@ def crawl_website(
         visited_pages = set(linked_pages.keys())
         pages_to_visit = set.union(*linked_pages.values()) - visited_pages
 
+        depth += 1
+        if max_depth is not None and depth > max_depth:
+            break
+
     return linked_pages
 
 
 def check_links(
     linked_pages: dict[str, set[str]],
-    timeout: float = 5,
-    sleep_time: float = 0.2,
+    timeout: float = 2.0,
+    sleep_time: float = 0.0,
     progressbar: bool = False,
     verbose: bool = False,
     num_workers: int = 1,
@@ -189,25 +196,25 @@ def main():
     parser.add_argument(
         "--max-depth",
         type=int,
-        default=2,
-        help="Maximum depth when crawling (default: 2).",
+        default=None,
+        help="Maximum depth when crawling (default: no-limit).",
     )
     parser.add_argument(
         "--sleep-time",
         type=float,
         default=0.0,
-        help="The time to sleep between requests (default: 0.0 seconds).",
+        help="The time to sleep between requests (default: 0 seconds).",
     )
     parser.add_argument(
         "--timeout",
-        type=int,
-        default=2,
+        type=float,
+        default=2.0,
         help="The request timeout in seconds (default: 2 seconds).",
     )
     parser.add_argument(
         "--ignore",
         nargs="*",
-        default=["^mailto:"],
+        default=[],
         help="List of patterns (regex) to ignore when crawling.",
     )
     parser.add_argument(
@@ -219,8 +226,8 @@ def main():
     parser.add_argument(
         "--num-workers",
         type=int,
-        default=1,
-        help="Number of threads to use (default: 1).",
+        default=None,
+        help="Number of threads to use (default: max(32, cpu_count() + 4)).",
     )
 
     args = parser.parse_args()
