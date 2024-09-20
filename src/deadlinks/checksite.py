@@ -77,43 +77,37 @@ def crawl_website(
     verbose: bool = False,
     num_workers: int = 1,
     progressbar: bool = False,
-) -> dict[str, set[str]]:
+) -> dict[str, dict[str, bool]]:
     """Crawl the website from the start_url and check all links."""
     if ignore_patterns is None:
         ignore_patterns = []
 
     base_domain = urlparse(start_url).netloc
 
-    def worker(current_url: str) -> tuple[str, set[str]]:
-        """For a link retrieves the actual url and all links under base domain on that page"""
+    def worker(current_url: str) -> tuple[str, dict[str, bool]]:
+        """For an url, return resulting url, and dictionary with all links and
+        if thery are internal"""
         current_url, links, success = get_links_from_page(current_url, timeout)
         if verbose:
             print(f"Found {len(links)} links in {current_url}")
         if not success:
-            return (current_url, set())
+            return (current_url, dict())
 
-        def should_return_link(link: str) -> tuple[bool, str]:
-            full_link = urljoin(current_url, link)  # convert relative links to absolute
-            keep_link = is_internal_link(
-                full_link, base_domain
-            ) and not should_ignore_link(full_link, ignore_patterns)
-            return keep_link, full_link
+        def get_full_link(link: str) -> str:
+            return urljoin(current_url, link)
 
-        # TODO should return if internal or not
-
-        links = set(
-            full_link
-            for link in links
-            for keep_link, full_link in [should_return_link(link)]
-            if keep_link
-        )
+        links = {
+            full_link: is_internal_link(full_link, base_domain)
+            for full_link in map(get_full_link, links)
+            if not should_ignore_link(full_link, ignore_patterns)
+        }
 
         # Sleep between requests to avoid overloading the server
         sleep(sleep_time)
         return current_url, links
 
     visited_pages = set()
-    pages_to_visit = [start_url]
+    pages_to_visit = {start_url}
     linked_pages = dict()
 
     depth = 0
@@ -129,8 +123,15 @@ def crawl_website(
                 )
             )
         )
-        visited_pages = set(linked_pages.keys())
-        pages_to_visit = set.union(*linked_pages.values()) - visited_pages
+        visited_pages |= pages_to_visit
+        visited_pages |= set(linked_pages.keys())
+        internal_links = set(
+            link
+            for links in linked_pages.values()
+            for link, is_internal in links.items()
+            if is_internal
+        )
+        pages_to_visit = internal_links - visited_pages
 
         depth += 1
         if max_depth is not None and depth > max_depth:
@@ -140,7 +141,7 @@ def crawl_website(
 
 
 def check_links(
-    linked_pages: dict[str, set[str]],
+    linked_pages: dict[str, dict[str, bool]],
     timeout: float = 2.0,
     sleep_time: float = 0.0,
     progressbar: bool = False,
@@ -155,7 +156,9 @@ def check_links(
         return valid, status_link
 
     # Check links in parallel
-    unique_links = set.union(*linked_pages.values())
+    unique_links = set(
+        link for links in linked_pages.values() for link, is_internal in links.items()
+    )
     link_check_results = dict(
         zip(
             unique_links,

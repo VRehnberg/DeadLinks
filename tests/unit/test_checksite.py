@@ -84,11 +84,15 @@ def test_crawl_website(mock_get_links_from_page):
     mock_get_links_from_page.side_effect = [
         (
             "http://example.com",
-            {"http://example.com/page1", "http://example.com/page2"},
+            {
+                "http://example.com/page1": True,
+                "http://example.com/page2": True,
+                "https://external_link.com": False,
+            },
             True,
         ),
-        ("http://example.com/page1", {"http://example.com/page2"}, True),
-        ("http://example.com/page2", set(), True),
+        ("http://example.com/page1", {"http://example.com/page2": True}, True),
+        ("http://example.com/page2", {}, True),
     ]
 
     linked_pages = crawl_website(
@@ -113,9 +117,13 @@ def test_check_links(mock_check_link_status):
     mock_check_link_status.side_effect = [(True, 200), (False, 404), (True, 200)]
 
     linked_pages = {
-        "http://example.com": {"http://example.com/page1", "http://example.com/page2"},
-        "http://example.com/page1": {"http://example.com/page2"},
-        "http://example.com/page2": set(),
+        "http://example.com": {
+            "http://example.com/page1": True,
+            "http://example.com/page2": True,
+            "https://external_link.com": False,
+        },
+        "http://example.com/page1": {"http://example.com/page2": True},
+        "http://example.com/page2": {},
     }
 
     all_ok = check_links(
@@ -136,7 +144,7 @@ def test_main(mock_parse_args, mock_check_links, mock_crawl_website):
         max_depth=2,
         sleep_time=0,
         timeout=2,
-        ignore=["^mailto:"],
+        ignore=[],
         verbose=True,
         progressbar=False,
         num_workers=1,
@@ -144,9 +152,13 @@ def test_main(mock_parse_args, mock_check_links, mock_crawl_website):
 
     # Mock crawling process
     mock_crawl_website.return_value = {
-        "http://example.com": {"http://example.com/page1", "http://example.com/page2"},
-        "http://example.com/page1": {"http://example.com/page2"},
-        "http://example.com/page2": set(),
+        "http://example.com": {
+            "http://example.com/page1": True,
+            "http://example.com/page2": True,
+            "https://external_link.com": False,
+        },
+        "http://example.com/page1": {"http://example.com/page2": True},
+        "http://example.com/page2": {},
     }
 
     # Mock check_links returning True (all links OK)
