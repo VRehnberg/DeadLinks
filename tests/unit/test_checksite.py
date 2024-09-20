@@ -141,13 +141,14 @@ def test_main(mock_parse_args, mock_check_links, mock_crawl_website):
     # Mock command-line arguments
     mock_parse_args.return_value = argparse.Namespace(
         start_url="http://example.com",
-        max_depth=2,
-        sleep_time=0,
-        timeout=2,
+        max_depth=None,
+        sleep_time=0.0,
+        timeout=5.0,
         ignore=[],
-        verbose=True,
+        verbose=False,
         progressbar=False,
-        num_workers=1,
+        num_workers=None,
+        no_color=True,
     )
 
     # Mock crawling process

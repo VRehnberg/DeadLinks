@@ -18,8 +18,8 @@ classifiers = [
 ]
 dependencies = [
     "beautifulsoup4",
-    "colorama",
     "requests",
+    "termcolor",
     "tqdm",
 ]
 

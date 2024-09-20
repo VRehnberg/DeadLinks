@@ -5,13 +5,13 @@ import pytest
 @pytest.mark.parametrize(
     "url",
     [
-        "https://example.com",
+        "https://example.com/",
     ],
 )
 def test_checksite_command(url):
     try:
         result = subprocess.run(
-            ["python", "-m", "deadlinks.checksite", url],
+            ["python", "-m", "deadlinks.checksite", "--no-color", url],
             capture_output=True,
             text=True,
         )
@@ -19,7 +19,7 @@ def test_checksite_command(url):
         assert result.returncode == 0
 
         assert (
-            "All links OK!" in result.stdout
+            "All 1 links OK!" in result.stdout
             or "Problematic links found" in result.stderr
         )
 

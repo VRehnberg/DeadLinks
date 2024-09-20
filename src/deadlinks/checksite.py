@@ -1,4 +1,5 @@
 import argparse
+import os
 import re
 import sys
 from time import sleep
@@ -7,7 +8,7 @@ from typing import Optional, Union
 
 import requests
 from bs4 import BeautifulSoup
-from colorama import Fore, Style
+from termcolor import colored
 from tqdm.contrib.concurrent import thread_map
 
 
@@ -24,20 +25,20 @@ def get_links_from_page(url: str, timeout: float) -> tuple[str, set[str], bool]:
         response = requests.get(url, timeout=timeout)
     except Exception as e:
         print(
-            f"{Fore.RED}Error{Style.RESET_ALL} fetching {Fore.RED}{url}{Style.RESET_ALL}: {e}",
+            f"{colored('Error', 'red')} fetching {colored(url, 'red')}: {e}",
             file=sys.stderr,
         )
         return url, set(), False
     else:
         if response.url != url:
             print(
-                f"{Fore.YELLOW}WARN:{Style.RESET_ALL} Link not pointing to endpoint {Fore.YELLOW}{url}{Style.RESET_ALL} -> {response.url}",
+                f"{colored('WARN', 'yellow')} Link not pointing to endpoint {colored(url, 'yellor')} -> {response.url}",
                 file=sys.stderr,
             )
             url = response.url
         if response.status_code != 200:
             print(
-                f"{Fore.RED}Failed{Style.RESET_ALL} to retrieve {Fore.RED}{url}{Style.RESET_ALL}. Status code: {response.status_code}"
+                f"{colored('Failed', 'red')} to retrieve {colored(url, 'red')}. Status code: {response.status_code}"
             )
             return url, set(), False
 
@@ -62,7 +63,7 @@ def check_link_status(link: str, timeout: float) -> tuple[bool, Union[int, str]]
         return False, str(e)
     except Exception as e:
         print(
-            f"{Fore.RED}Unknown error{Style.RESET_ALL} requesting {Fore.RED}{link}{Style.RESET_ALL}: {e}",
+            f"{colored('Unknown error', 'red')} requesting {colored(link, 'red')}: {e}",
             file=sys.stderr,
         )
         return False, str(e)
@@ -185,10 +186,13 @@ def check_links(
     all_links_ok = all(valid for valid, _ in link_check_results.values())
     if all_links_ok:
         print(
-            f"{Fore.GREEN}All links {sum(len(links) for links in linked_pages.values())} OK!{Style.RESET_ALL}"
+            colored(
+                f"All {sum(len(links) for links in linked_pages.values())} links OK!",
+                "green",
+            )
         )
     else:
-        print(f"{Fore.RED}Problematic links{Style.RESET_ALL} found:", file=sys.stderr)
+        print(colored("Problematic links found:", "red"), file=sys.stderr)
         num_invalid_links = 0
         for current_link, links in linked_pages.items():
             for link in links:
@@ -196,11 +200,11 @@ def check_links(
                 if not valid:
                     num_invalid_links += 1
                     print(
-                        f"  {Fore.RED}{link}{Style.RESET_ALL} at {Fore.YELLOW}{current_link}{Style.RESET_ALL} status code {status_code}",
+                        f"  {colored(link, 'red')} at {colored(current_link, 'yellow')} status code {status_code}",
                         file=sys.stderr,
                     )
         print(
-            f"in total {Fore.RED}{num_invalid_links}{Style.RESET_ALL}/{sum(len(links) for links in linked_pages.values())} links where invalid."
+            f"in total {colored(str(num_invalid_links), 'red')}/{sum(len(links) for links in linked_pages.values())} links where invalid."
         )
 
     return all_links_ok
@@ -248,8 +252,15 @@ def main():
         default=None,
         help="Number of threads to use (default: max(32, cpu_count() + 4)).",
     )
+    parser.add_argument(
+        "--no-color", action="store_true", help="Disable colors in output."
+    )
 
     args = parser.parse_args()
+
+    # Disable color if selected
+    if args.no_color:
+        os.environ["NO_COLOR"] = "1"
 
     # Start the crawling process with the provided parameters
     linked_pages = crawl_website(
