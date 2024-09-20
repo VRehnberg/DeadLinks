@@ -1,29 +1,29 @@
 import argparse
 import re
 import sys
-from collections import defaultdict
 from time import sleep
 from urllib.parse import urljoin, urlparse, urlunparse
+from typing import Optional, Union
 
 import requests
 from bs4 import BeautifulSoup
 from tqdm.contrib.concurrent import thread_map
 
 
-def simplify_link(link):
+def simplify_link(link: str) -> str:
     parsed_url = urlparse(link)
     return urlunparse(
         (parsed_url.scheme, parsed_url.netloc, parsed_url.path, "", "", "")
     )
 
 
-def get_links_from_page(url, timeout):
+def get_links_from_page(url: str, timeout: float) -> tuple[str, set[str], bool]:
     """Extract all links from a given page."""
     try:
         response = requests.get(url, timeout=timeout)
     except Exception as e:
         print(f"Error fetching {url}: {e}", file=sys.stderr)
-        return url, [], False
+        return url, set(), False
     else:
         if response.url != url:
             print(
@@ -33,7 +33,7 @@ def get_links_from_page(url, timeout):
             url = response.url
         if response.status_code != 200:
             print(f"Failed to retrieve {url}. Status code: {response.status_code}")
-            return url, [], False
+            return url, set(), False
 
         soup = BeautifulSoup(response.content, "html.parser")
         links = set(
@@ -42,13 +42,13 @@ def get_links_from_page(url, timeout):
         return url, links, True
 
 
-def is_internal_link(link, base_domain):
+def is_internal_link(link: str, base_domain: str) -> bool:
     """Check if the link is an internal link to the website."""
     link_domain = urlparse(link).netloc
     return link_domain == "" or link_domain == base_domain
 
 
-def check_link_status(link, timeout):
+def check_link_status(link: str, timeout: float) -> tuple[bool, Union[int, str]]:
     """Check if the link is reachable."""
     try:
         response = requests.head(link, allow_redirects=True, timeout=timeout)
@@ -63,21 +63,21 @@ def check_link_status(link, timeout):
         return True, response.status_code
 
 
-def should_ignore_link(link, ignore_patterns):
+def should_ignore_link(link: str, ignore_patterns: list[str]) -> bool:
     """Check if a link matches any ignore patterns."""
     return any(re.search(pattern, link) for pattern in ignore_patterns)
 
 
 def crawl_website(
-    start_url,
-    max_depth=2,
-    sleep_time=0.2,
-    timeout=5,
-    ignore_patterns=None,
-    verbose=False,
+    start_url: str,
+    max_depth: int = 2,
+    sleep_time: float = 0.2,
+    timeout: float = 5.0,
+    ignore_patterns: Optional[list[str]] = None,
+    verbose: bool = False,
     num_workers: int = 1,
     progressbar: bool = False,
-):
+) -> dict[str, set[str]]:
     """Crawl the website from the start_url and check all links."""
     if ignore_patterns is None:
         ignore_patterns = []
@@ -133,7 +133,7 @@ def crawl_website(
 
 
 def check_links(
-    linked_pages: dict[str, set],
+    linked_pages: dict[str, set[str]],
     timeout: float = 5,
     sleep_time: float = 0.2,
     progressbar: bool = False,
