@@ -184,7 +184,9 @@ def check_links(
     # Print problematic links to stderr
     all_links_ok = all(valid for valid, _ in link_check_results.values())
     if all_links_ok:
-        print(f"{Fore.GREEN}All links OK!{Style.RESET_ALL}")
+        print(
+            f"{Fore.GREEN}All links {sum(len(links) for links in linked_pages.values())} OK!{Style.RESET_ALL}"
+        )
     else:
         print(f"{Fore.RED}Problematic links{Style.RESET_ALL} found:", file=sys.stderr)
         num_invalid_links = 0
@@ -194,11 +196,11 @@ def check_links(
                 if not valid:
                     num_invalid_links += 1
                     print(
-                        f"  {Fore.RED}{link}{Style.RESET_ALL} at {Fore.RED}{current_link}{Style.RESET_ALL} with {status_code}",
+                        f"  {Fore.RED}{link}{Style.RESET_ALL} at {Fore.YELLOW}{current_link}{Style.RESET_ALL} status code {status_code}",
                         file=sys.stderr,
                     )
         print(
-            f"in total {num_invalid_links}/{sum(len(links) for links in linked_pages.values())} links where invalid."
+            f"in total {Fore.RED}{num_invalid_links}{Style.RESET_ALL}/{sum(len(links) for links in linked_pages.values())} links where invalid."
         )
 
     return all_links_ok
@@ -225,7 +227,7 @@ def main():
     parser.add_argument(
         "--timeout",
         type=float,
-        default=2.0,
+        default=5.0,
         help="The request timeout in seconds (default: 2 seconds).",
     )
     parser.add_argument(
