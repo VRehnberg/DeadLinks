@@ -16,4 +16,4 @@ python -m deadlinks.checksite --help
 
 ## Alternatives
  - <https://www.deadlinkchecker.com/> no install required for manual use
- - <https://github.com/linkchecker/linkchecker> this is probably what you want instead
+ - <https://github.com/linkchecker/linkchecker> better maintained and more proper, but can be much slower
