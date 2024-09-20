@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "deadlinks"
 version = "0.0.1"
 authors = [
-  { name="Viktor Rehnberg @ C3SE", email="viktor.rehnberg@chalmers.se" },
+  { name="Viktor Rehnberg", email="viktor.rehnberg@chalmers.se" },
 ]
 description = "A command utility for checking a site for dead links"
 readme = "README.md"
