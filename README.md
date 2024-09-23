@@ -6,7 +6,7 @@ projects building sites.
 
 ## Installation
 ```bash
-pip install linkchecking
+pip install https://github.com/VRehnberg/LinkChecking/archive/v0.0.1.zip
 ```
 
 ## Usage
