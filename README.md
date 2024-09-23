@@ -6,12 +6,12 @@ projects building sites.
 
 ## Installation
 ```bash
-pip install deadlinks
+pip install linkchecking
 ```
 
 ## Usage
 ```bash
-python -m deadlinks.checksite --help
+python -m linkchecking.checksite --help
 ```
 
 ## Alternatives

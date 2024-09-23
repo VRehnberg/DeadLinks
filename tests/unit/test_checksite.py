@@ -3,7 +3,7 @@ from unittest.mock import patch, MagicMock
 
 import requests
 
-from deadlinks.checksite import (
+from linkchecking.checksite import (
     simplify_link,
     get_links_from_page,
     is_internal_link,
@@ -28,7 +28,7 @@ def test_simplify_link():
 
 
 # Mocked get_links_from_page
-@patch("deadlinks.checksite.requests.get")
+@patch("linkchecking.checksite.requests.get")
 def test_get_links_from_page(mock_get):
     mock_response = MagicMock()
     mock_response.status_code = 200
@@ -49,7 +49,7 @@ def test_is_internal_link():
     assert not is_internal_link("http://external.com/path", "example.com")
 
 
-@patch("deadlinks.checksite.requests.head")
+@patch("linkchecking.checksite.requests.head")
 def test_check_link_status(mock_head):
     # Case 1: Valid link
     mock_response = MagicMock()
@@ -79,7 +79,7 @@ def test_should_ignore_link():
     assert not should_ignore_link("http://example.com/page", ignore_patterns)
 
 
-@patch("deadlinks.checksite.get_links_from_page")
+@patch("linkchecking.checksite.get_links_from_page")
 def test_crawl_website(mock_get_links_from_page):
     mock_get_links_from_page.side_effect = [
         (
@@ -111,7 +111,7 @@ def test_crawl_website(mock_get_links_from_page):
 
 
 # Mocked check_links
-@patch("deadlinks.checksite.check_link_status")
+@patch("linkchecking.checksite.check_link_status")
 def test_check_links(mock_check_link_status):
     # Mock results for checking each link
     mock_check_link_status.side_effect = [(True, 200), (False, 404), (True, 200)]
@@ -134,8 +134,8 @@ def test_check_links(mock_check_link_status):
 
 
 # Mocked `main`
-@patch("deadlinks.checksite.crawl_website")
-@patch("deadlinks.checksite.check_links")
+@patch("linkchecking.checksite.crawl_website")
+@patch("linkchecking.checksite.check_links")
 @patch("argparse.ArgumentParser.parse_args")
 def test_main(mock_parse_args, mock_check_links, mock_crawl_website):
     # Mock command-line arguments
@@ -166,7 +166,7 @@ def test_main(mock_parse_args, mock_check_links, mock_crawl_website):
     mock_check_links.return_value = True
 
     with patch("sys.exit") as mock_exit:
-        from deadlinks.checksite import main
+        from linkchecking.checksite import main
 
         main()
         mock_exit.assert_not_called()
@@ -175,7 +175,7 @@ def test_main(mock_parse_args, mock_check_links, mock_crawl_website):
     mock_check_links.return_value = False
 
     with patch("sys.exit") as mock_exit:
-        from deadlinks.checksite import main
+        from linkchecking.checksite import main
 
         main()
         mock_exit.assert_called_once_with(1)

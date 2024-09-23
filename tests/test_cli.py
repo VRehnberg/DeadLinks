@@ -11,7 +11,7 @@ import pytest
 def test_checksite_command(url):
     try:
         result = subprocess.run(
-            ["python", "-m", "deadlinks.checksite", "--no-color", url],
+            ["python", "-m", "linkchecking.checksite", "--no-color", url],
             capture_output=True,
             text=True,
         )
