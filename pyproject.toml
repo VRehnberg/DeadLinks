@@ -30,5 +30,5 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/VRehnberg/DeadLinks"
-Issues = "https://github.com/VRehnberg/DeadLinks/issues"
+Homepage = "https://github.com/VRehnberg/LinkChecking"
+Issues = "https://github.com/VRehnberg/LinkChecking/issues"

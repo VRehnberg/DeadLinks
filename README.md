@@ -1,5 +1,5 @@
-# DeadLinks
-A command line utility for checking a site for deadlinks. Useful for CI for
+# LinkChecking
+A command line utility for checking a site for dead links. Useful for CI for
 projects building sites.
 
 **Note:** This only uses requests. Does not deal with javascript.
