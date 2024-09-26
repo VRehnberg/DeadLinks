@@ -149,6 +149,11 @@ def crawl_website(
         if max_depth is not None and depth > max_depth:
             break
 
+    if not any(linked_pages.values()):
+        requests.get(start_url, timeout=timeout).raise_for_status()
+        # if error not thrown on line above
+        print(f"{colored('WARN', 'yellow')} No links found! Check {start_url}")
+
     return linked_pages
 
 
