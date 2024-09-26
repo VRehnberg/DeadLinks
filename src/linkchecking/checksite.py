@@ -34,7 +34,7 @@ def get_links_from_page(url: str, timeout: float) -> tuple[str, set[str], bool]:
     else:
         if response.url != url:
             print(
-                f"{colored('WARN', 'yellow')} Link not pointing to endpoint {colored(url, 'yellor')} -> {response.url}",
+                f"{colored('WARN', 'yellow')} Link not pointing to endpoint {colored(url, 'yellow')} -> {response.url}",
                 file=sys.stderr,
             )
             url = response.url
